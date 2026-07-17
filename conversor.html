@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atualizar Dados — Simulador Magik</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#3d2a5c;
+    --blue:#5c3f86;
+    --blue-light:#efeaf7;
+    --amber:#f6bb33;
+    --amber-dark:#3d2a5c;
+    --amber-light:#fdf1d6;
+    --paper:#fbf8f2;
+    --ink:#2a2138;
+    --ink-soft:#6b6178;
+    --line:#e2dce8;
+    --green:#2f7d5a;
+    --green-light:#e6f2ec;
+    --red:#a63d3d;
+    --red-light:#f6e8e8;
+    --coral:#d16b5d;
+    --teal:#6db0c0;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Poppins','Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    line-height:1.5;
+  }
+  .app{max-width:760px;margin:0 auto;padding:0 20px 80px;}
+
+  header.hero{
+    background: linear-gradient(135deg, #fedc5c, var(--amber));
+    color:var(--navy);
+    padding:30px 20px 28px;
+    margin-bottom:32px;
+  }
+  .hero-inner{max-width:760px;margin:0 auto;}
+  .eyebrow{text-transform:uppercase;letter-spacing:.14em;font-size:11.5px;font-weight:700;color:#463464;margin-bottom:8px;}
+  h1{font-size:26px;margin:0 0 8px;font-weight:800;letter-spacing:-0.01em;color:var(--navy);}
+  .hero-sub{color:#463464;font-size:14.5px;max-width:520px;margin:0;opacity:.85;}
+
+  .step{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:24px;
+    margin-bottom:20px;
+    position:relative;
+  }
+  .step.disabled{opacity:.45; pointer-events:none;}
+  .step-head{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .step-num{
+    width:26px;height:26px;border-radius:50%;
+    background:var(--navy);color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:800;flex-shrink:0;
+  }
+  .step-title{font-size:16px;font-weight:700;color:var(--navy);}
+  .step-desc{font-size:13.5px;color:var(--ink-soft);margin:0 0 16px 36px;}
+
+  .toggle-row{display:flex;gap:10px;margin-left:36px;}
+  .toggle-btn{
+    flex:1;padding:14px 12px;
+    border:1.5px solid var(--line);border-radius:8px;
+    background:#fbfbfa;cursor:pointer;text-align:left;
+  }
+  .toggle-btn strong{display:block;font-size:14px;color:var(--navy);margin-bottom:2px;}
+  .toggle-btn span{font-size:12px;color:var(--ink-soft);}
+  .toggle-btn.active{border-color:var(--amber);background:var(--amber-light);}
+
+  .prompt-box{
+    margin-left:36px;
+    background:#f6f3ee;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:14px 16px;
+    font-family:'SF Mono',Consolas,monospace;
+    font-size:12px;
+    color:var(--ink);
+    white-space:pre-wrap;
+    max-height:220px;
+    overflow-y:auto;
+    line-height:1.55;
+  }
+  .btn-row{margin-left:36px;margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;}
+  button{
+    font-family:inherit;font-size:13.5px;font-weight:700;
+    border:none;border-radius:999px;padding:11px 20px;
+    cursor:pointer;
+  }
+  .btn-primary{background:var(--amber);color:var(--amber-dark);}
+  .btn-primary:hover{background:#e8ab1f;}
+  .btn-secondary{background:var(--blue-light);color:var(--navy);}
+  .btn-secondary:hover{background:#e2d9f2;}
+  .btn-ghost{background:transparent;color:var(--navy);border:1.5px solid var(--line);}
+  .copied-tag{font-size:12px;color:var(--green);font-weight:700;margin-left:8px;align-self:center;}
+
+  textarea{
+    width:100%;margin-left:0;
+    border:1px solid var(--line);border-radius:8px;
+    padding:12px;font-family:'SF Mono',Consolas,monospace;font-size:12px;
+    min-height:140px;color:var(--ink);
+  }
+  .field-row{margin-left:36px;}
+  label{display:block;font-size:12.5px;font-weight:700;color:var(--ink-soft);margin:0 0 6px;}
+  input[type=number]{
+    border:1px solid var(--line);border-radius:7px;padding:9px 11px;font-size:14px;width:160px;font-family:inherit;
+  }
+
+  .validation-result{margin-left:36px;margin-top:16px;}
+  .v-ok{background:var(--green-light);border:1px solid #b9dcc9;color:var(--green);padding:14px 16px;border-radius:8px;font-size:13.5px;font-weight:600;}
+  .v-bad{background:var(--red-light);border:1px solid #e3b6b6;color:var(--red);padding:14px 16px;border-radius:8px;font-size:13.5px;}
+  .v-bad ul{margin:8px 0 0;padding-left:18px;}
+  .v-bad li{margin-bottom:4px;}
+
+  footer{text-align:center;font-size:11.5px;color:var(--ink-soft);margin-top:40px;padding-top:20px;border-top:1px solid var(--line);}
+  a.back-link{color:var(--navy);font-weight:600;font-size:13px;text-decoration:none;}
+  a.back-link:hover{text-decoration:underline;}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow">Magik Empreendimentos Imobiliários</div>
+    <h1>Atualizar dados do simulador</h1>
+    <p class="hero-sub">Transforme um PDF em dados prontos para colar na planilha — sem precisar entender de código, sem custo.</p>
+  </div>
+</header>
+
+<div class="app">
+
+  <div class="step" id="step1">
+    <div class="step-head"><div class="step-num">1</div><div class="step-title">Que tipo de PDF você tem em mãos?</div></div>
+    <p class="step-desc">Isso define qual roteiro de conversão vamos usar.</p>
+    <div class="toggle-row" id="tipoToggle">
+      <div class="toggle-btn active" data-tipo="caixa">
+        <strong>Tabela da Caixa</strong>
+        <span>Financiamento, subsídio, taxas (com ou sem redutor)</span>
+      </div>
+      <div class="toggle-btn" data-tipo="unidades">
+        <strong>Unidades / Dormitórios</strong>
+        <span>Lista de unidades com quantidade de dormitórios</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="step" id="step2">
+    <div class="step-head"><div class="step-num">2</div><div class="step-title">Copie o roteiro abaixo</div></div>
+    <p class="step-desc">Esse texto instrui a IA a extrair a tabela certinha — não precisa entender o conteúdo, só copiar.</p>
+    <div class="prompt-box" id="promptBox"></div>
+    <div class="btn-row">
+      <button class="btn-primary" id="btnCopyPrompt">Copiar roteiro</button>
+      <span class="copied-tag" id="copiedTag" style="display:none;">Copiado ✓</span>
+    </div>
+  </div>
+
+  <div class="step" id="step3">
+    <div class="step-head"><div class="step-num">3</div><div class="step-title">Abra o Claude e cole o roteiro</div></div>
+    <p class="step-desc">Abra uma conversa nova, anexe o PDF, cole o roteiro que você copiou e envie.</p>
+    <div class="btn-row" style="margin-top:0;">
+      <a href="https://claude.ai/new" target="_blank" rel="noopener"><button class="btn-secondary">Abrir Claude.ai em nova aba →</button></a>
+    </div>
+  </div>
+
+  <div class="step" id="step4">
+    <div class="step-head"><div class="step-num">4</div><div class="step-title">Cole aqui o resultado</div></div>
+    <p class="step-desc">Copie a resposta completa que o Claude te devolveu (só a tabela) e cole no campo abaixo.</p>
+    <div class="field-row">
+      <textarea id="csvInput" placeholder="FAIXA,RENDA,SUBSIDIO_COM_DEPENDENTE,...&#10;FAIXA 1,1000,55000,...&#10;..."></textarea>
+    </div>
+    <div class="field-row" style="margin-top:14px;">
+      <label for="expectedRows">Quantas linhas você espera? (opcional, mas recomendado)</label>
+      <input type="number" id="expectedRows" placeholder="ex: 426" min="0">
+    </div>
+    <div class="btn-row">
+      <button class="btn-primary" id="btnValidar">Conferir resultado</button>
+    </div>
+    <div id="validationResult"></div>
+  </div>
+
+  <footer>
+    Dúvidas ou resultado sempre der erro? Fale com a Beta Negócios · Assessoria Imobiliária.<br>
+    <a class="back-link" href="./index.html">← Voltar para o simulador</a>
+  </footer>
+</div>
+
+<script>
+const PROMPTS = {
+  caixa: `Você vai receber um PDF com uma tabela de financiamento habitacional da Caixa Econômica Federal (420 meses). Extraia TODAS as linhas da tabela, sem pular nenhuma e sem resumir, e devolva em formato CSV com exatamente estas colunas, nesta ordem:
+
+FAIXA,RENDA,SUBSIDIO_COM_DEPENDENTE,FINANCIAMENTO,SUBSIDIO_SEM_DEPENDENTE,PRIMEIRA_PRESTACAO,VALOR_AVALIACAO,TAXA_NOMINAL,TAXA_EFETIVA
+
+Regras obrigatórias:
+- Números em formato decimal simples: sem "R$", sem separador de milhar, ponto como separador decimal (ex: 56132.57, não "R$ 56.132,57").
+- Percentuais sem o símbolo % (ex: 4.75, não "4,75%").
+- Onde o PDF mostrar "-" (sem valor), escreva 0.
+- Na coluna FAIXA, repita o número da faixa (ex: FAIXA 1, FAIXA 2...) em TODA linha correspondente, mesmo que no PDF ela apareça só uma vez como cabeçalho de seção.
+- Não invente, não arredonde, não interprete — copie os valores exatamente como aparecem no PDF.
+- Devolva SOMENTE o CSV puro, sem nenhum texto explicativo antes, depois, ou comentários no meio. Só o CSV, começando pela linha de cabeçalho.
+- Ao final, em uma linha separada começando com "#", informe quantas linhas de dados você extraiu (ex: # Total: 122 linhas).`,
+  unidades: `Você vai receber um PDF com uma tabela de unidades disponíveis de um empreendimento imobiliário. Extraia TODAS as linhas, sem pular nenhuma, e devolva em formato CSV com exatamente estas colunas, nesta ordem:
+
+EMPREENDIMENTO,BLOCO,UNIDADE,DORMITORIOS
+
+Regras obrigatórias:
+- Mantenha o nome do EMPREENDIMENTO exatamente como está escrito no PDF, com acentos e maiúsculas iguais ao original.
+- Se o PDF tiver outras colunas (metragem, vaga, valor etc.), ignore-as — extraia só as quatro pedidas.
+- Se alguma unidade não tiver dormitórios visível, escreva "NAO_INFORMADO" nessa célula, não deixe em branco e não invente um número.
+- Devolva SOMENTE o CSV puro, sem texto explicativo antes, depois, ou comentários no meio.
+- Ao final, em uma linha separada começando com "#", informe quantas linhas de dados você extraiu (ex: # Total: 426 linhas).`
+};
+
+const EXPECTED_COLUMNS = {
+  caixa: ['FAIXA','RENDA','SUBSIDIO_COM_DEPENDENTE','FINANCIAMENTO','SUBSIDIO_SEM_DEPENDENTE','PRIMEIRA_PRESTACAO','VALOR_AVALIACAO','TAXA_NOMINAL','TAXA_EFETIVA'],
+  unidades: ['EMPREENDIMENTO','BLOCO','UNIDADE','DORMITORIOS']
+};
+
+let tipoAtual = 'caixa';
+const promptBox = document.getElementById('promptBox');
+function renderPrompt(){
+  promptBox.textContent = PROMPTS[tipoAtual];
+}
+renderPrompt();
+
+document.querySelectorAll('#tipoToggle .toggle-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#tipoToggle .toggle-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    tipoAtual = btn.dataset.tipo;
+    renderPrompt();
+    document.getElementById('validationResult').innerHTML = '';
+  });
+});
+
+document.getElementById('btnCopyPrompt').addEventListener('click', async ()=>{
+  try{
+    await navigator.clipboard.writeText(PROMPTS[tipoAtual]);
+  }catch(e){
+    // fallback pra navegadores sem permissão de clipboard
+    const ta = document.createElement('textarea');
+    ta.value = PROMPTS[tipoAtual];
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  }
+  const tag = document.getElementById('copiedTag');
+  tag.style.display = 'inline';
+  setTimeout(()=>{ tag.style.display = 'none'; }, 2500);
+});
+
+function parseCSV(text){
+  return text.split('\n')
+    .map(l=>l.replace('\r',''))
+    .filter(l=>l.trim() !== '' && !l.trim().startsWith('#'));
+}
+
+document.getElementById('btnValidar').addEventListener('click', ()=>{
+  const raw = document.getElementById('csvInput').value;
+  const expected = parseInt(document.getElementById('expectedRows').value, 10) || null;
+  const cols = EXPECTED_COLUMNS[tipoAtual];
+  const resultEl = document.getElementById('validationResult');
+  const problems = [];
+
+  if(!raw.trim()){
+    resultEl.innerHTML = '<div class="v-bad">Cole o resultado do Claude no campo acima antes de conferir.</div>';
+    return;
+  }
+
+  const lines = parseCSV(raw);
+  if(lines.length === 0){
+    resultEl.innerHTML = '<div class="v-bad">Não encontrei nenhuma linha de dados no texto colado.</div>';
+    return;
+  }
+
+  const header = lines[0].split(',').map(h=>h.trim().toUpperCase());
+  const dataLines = lines.slice(1);
+
+  if(header.length !== cols.length){
+    problems.push(`O cabeçalho tem ${header.length} coluna(s), mas o esperado é ${cols.length} (${cols.join(', ')}).`);
+  } else {
+    cols.forEach((c,i)=>{
+      if(header[i] !== c) problems.push(`Coluna ${i+1} veio como "${header[i]}", esperado "${c}".`);
+    });
+  }
+
+  if(expected && dataLines.length !== expected){
+    problems.push(`Vieram ${dataLines.length} linha(s) de dados, mas você esperava ${expected}. Confira se o Claude pulou alguma linha.`);
+  }
+
+  const badRows = [];
+  dataLines.forEach((line, idx)=>{
+    const parts = line.split(',');
+    if(parts.length !== cols.length){
+      badRows.push(`Linha ${idx+2}: tem ${parts.length} coluna(s), esperado ${cols.length}.`);
+      return;
+    }
+    if(tipoAtual === 'caixa'){
+      // colunas numéricas (a partir da 2ª) não devem ter R$, %, ou vírgula decimal
+      for(let i=1;i<parts.length;i++){
+        const v = parts[i].trim();
+        if(/[R$%]/.test(v) || /,\d/.test(v)){
+          badRows.push(`Linha ${idx+2}, coluna "${cols[i]}": valor "${v}" parece não estar em formato numérico limpo.`);
+        }
+      }
+    }
+  });
+  if(badRows.length > 0){
+    problems.push(...badRows.slice(0,8));
+    if(badRows.length > 8) problems.push(`...e mais ${badRows.length-8} linha(s) com problema semelhante.`);
+  }
+
+  if(problems.length === 0){
+    resultEl.innerHTML = `<div class="v-ok">Tudo certo: ${dataLines.length} linha(s) de dados, colunas no formato esperado. Pode colar na aba correta do Google Sheets.</div>
+      <div class="btn-row" style="margin-left:0;margin-top:12px;"><button class="btn-primary" id="btnDownload">Baixar como .csv</button></div>`;
+    document.getElementById('btnDownload').addEventListener('click', ()=>{
+      const blob = new Blob([raw.trim()+'\n'], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = (tipoAtual === 'caixa' ? 'tabela_caixa' : 'unidades_dormitorios') + '.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  } else {
+    resultEl.innerHTML = `<div class="v-bad"><strong>Encontrei ${problems.length} ponto(s) pra conferir antes de usar:</strong><ul>${problems.map(p=>`<li>${p}</li>`).join('')}</ul>Peça pro Claude corrigir esses pontos específicos na mesma conversa, ou refaça a extração.</div>`;
+  }
+});
+</script>
+</body>
+</html>
