@@ -142,9 +142,13 @@
     <div class="step-head"><div class="step-num">1</div><div class="step-title">Que tipo de PDF você tem em mãos?</div></div>
     <p class="step-desc">Isso define qual roteiro de conversão vamos usar.</p>
     <div class="toggle-row" id="tipoToggle">
-      <div class="toggle-btn active" data-tipo="caixa">
-        <strong>Tabela da Caixa</strong>
-        <span>Financiamento, subsídio, taxas (com ou sem redutor)</span>
+      <div class="toggle-btn active" data-tipo="caixa_sem">
+        <strong>Caixa — Sem Redutor</strong>
+        <span>Tabela de financiamento sem redutor</span>
+      </div>
+      <div class="toggle-btn" data-tipo="caixa_com">
+        <strong>Caixa — Com Redutor</strong>
+        <span>Tabela de financiamento com redutor</span>
       </div>
       <div class="toggle-btn" data-tipo="unidades">
         <strong>Unidades / Dormitórios</strong>
@@ -195,18 +199,44 @@
 
 <script>
 const PROMPTS = {
-  caixa: `Você vai receber um PDF com uma tabela de financiamento habitacional da Caixa Econômica Federal (420 meses). Extraia TODAS as linhas da tabela, sem pular nenhuma e sem resumir, e devolva em formato CSV com exatamente estas colunas, nesta ordem:
+  caixa_sem: `Você vai receber em anexo um PDF com uma tabela de financiamento habitacional da Caixa Econômica Federal (420 meses, SEM REDUTOR).
 
+Extraia TODAS as linhas da tabela, sem pular nenhuma e sem resumir. Prefira escrever e rodar um script para ler o PDF de forma estruturada (em vez de transcrever visualmente), para reduzir erro de leitura.
+
+Gere um arquivo CSV para download chamado exatamente: tabela_caixa_sem_redutor.csv
+
+Colunas exatas, nesta ordem:
 FAIXA,RENDA,SUBSIDIO_COM_DEPENDENTE,FINANCIAMENTO,SUBSIDIO_SEM_DEPENDENTE,PRIMEIRA_PRESTACAO,VALOR_AVALIACAO,TAXA_NOMINAL,TAXA_EFETIVA
 
-Regras obrigatórias:
-- Números em formato decimal simples: sem "R$", sem separador de milhar, ponto como separador decimal (ex: 56132.57, não "R$ 56.132,57").
-- Percentuais sem o símbolo % (ex: 4.75, não "4,75%").
-- Onde o PDF mostrar "-" (sem valor), escreva 0.
-- Na coluna FAIXA, repita o número da faixa (ex: FAIXA 1, FAIXA 2...) em TODA linha correspondente, mesmo que no PDF ela apareça só uma vez como cabeçalho de seção.
-- Não invente, não arredonde, não interprete — copie os valores exatamente como aparecem no PDF.
-- Devolva SOMENTE o CSV puro, sem nenhum texto explicativo antes, depois, ou comentários no meio. Só o CSV, começando pela linha de cabeçalho.
-- Ao final, em uma linha separada começando com "#", informe quantas linhas de dados você extraiu (ex: # Total: 122 linhas).`,
+Regras:
+- Números em formato decimal simples: sem "R$", sem separador de milhar, ponto como separador decimal.
+- Sem zeros decimais desnecessários (1000, não 1000.0).
+- Percentuais sem símbolo %.
+- Onde o PDF mostrar "-", escreva 0.
+- Se uma linha do PDF vier sem nenhum dado além da renda (linha quebrada/incompleta), NÃO a inclua no CSV — pule essa linha.
+- Coluna FAIXA repetida em toda linha correspondente à sua seção.
+- Não invente, não arredonde, não interprete — copie os valores exatamente como aparecem.
+- NÃO devolva o conteúdo como texto na conversa — entregue SOMENTE como arquivo para download.
+- Ao final, numa mensagem curta (fora do arquivo), informe quantas linhas de dados extraiu.`,
+  caixa_com: `Você vai receber em anexo um PDF com uma tabela de financiamento habitacional da Caixa Econômica Federal (420 meses, COM REDUTOR).
+
+Extraia TODAS as linhas da tabela, sem pular nenhuma e sem resumir. Prefira escrever e rodar um script para ler o PDF de forma estruturada (em vez de transcrever visualmente), para reduzir erro de leitura.
+
+Gere um arquivo CSV para download chamado exatamente: tabela_caixa_com_redutor.csv
+
+Colunas exatas, nesta ordem:
+FAIXA,RENDA,SUBSIDIO_COM_DEPENDENTE,FINANCIAMENTO,SUBSIDIO_SEM_DEPENDENTE,PRIMEIRA_PRESTACAO,VALOR_AVALIACAO,TAXA_NOMINAL,TAXA_EFETIVA
+
+Regras:
+- Números em formato decimal simples: sem "R$", sem separador de milhar, ponto como separador decimal.
+- Sem zeros decimais desnecessários (1000, não 1000.0).
+- Percentuais sem símbolo %.
+- Onde o PDF mostrar "-", escreva 0.
+- Se uma linha do PDF vier sem nenhum dado além da renda (linha quebrada/incompleta), NÃO a inclua no CSV — pule essa linha.
+- Coluna FAIXA repetida em toda linha correspondente à sua seção.
+- Não invente, não arredonde, não interprete — copie os valores exatamente como aparecem.
+- NÃO devolva o conteúdo como texto na conversa — entregue SOMENTE como arquivo para download.
+- Ao final, numa mensagem curta (fora do arquivo), informe quantas linhas de dados extraiu.`,
   unidades: `Você vai receber um PDF com uma tabela de unidades disponíveis de um empreendimento imobiliário. Extraia TODAS as linhas, sem pular nenhuma, e devolva em formato CSV com exatamente estas colunas, nesta ordem:
 
 EMPREENDIMENTO,BLOCO,UNIDADE,DORMITORIOS
@@ -219,17 +249,45 @@ Regras obrigatórias:
 - Ao final, em uma linha separada começando com "#", informe quantas linhas de dados você extraiu (ex: # Total: 426 linhas).`
 };
 
+const FILE_NAMES = {
+  caixa_sem: 'tabela_caixa_sem_redutor.csv',
+  caixa_com: 'tabela_caixa_com_redutor.csv'
+};
+
 const EXPECTED_COLUMNS = {
-  caixa: ['FAIXA','RENDA','SUBSIDIO_COM_DEPENDENTE','FINANCIAMENTO','SUBSIDIO_SEM_DEPENDENTE','PRIMEIRA_PRESTACAO','VALOR_AVALIACAO','TAXA_NOMINAL','TAXA_EFETIVA'],
+  caixa_sem: ['FAIXA','RENDA','SUBSIDIO_COM_DEPENDENTE','FINANCIAMENTO','SUBSIDIO_SEM_DEPENDENTE','PRIMEIRA_PRESTACAO','VALOR_AVALIACAO','TAXA_NOMINAL','TAXA_EFETIVA'],
+  caixa_com: ['FAIXA','RENDA','SUBSIDIO_COM_DEPENDENTE','FINANCIAMENTO','SUBSIDIO_SEM_DEPENDENTE','PRIMEIRA_PRESTACAO','VALOR_AVALIACAO','TAXA_NOMINAL','TAXA_EFETIVA'],
   unidades: ['EMPREENDIMENTO','BLOCO','UNIDADE','DORMITORIOS']
 };
 
-let tipoAtual = 'caixa';
+let tipoAtual = 'caixa_sem';
+const FILE_BASED_TYPES = ['caixa_sem', 'caixa_com'];
 const promptBox = document.getElementById('promptBox');
 function renderPrompt(){
   promptBox.textContent = PROMPTS[tipoAtual];
 }
 renderPrompt();
+
+const step4 = document.getElementById('step4');
+const step4TitleEl = step4.querySelector('.step-title');
+const step4DescEl = step4.querySelector('.step-desc');
+function renderStep4(){
+  document.getElementById('validationResult').innerHTML = '';
+  if(FILE_BASED_TYPES.includes(tipoAtual)){
+    step4TitleEl.textContent = 'Baixe o arquivo e jogue no Drive';
+    step4DescEl.textContent = `O Claude vai te devolver um arquivo chamado "${FILE_NAMES[tipoAtual]}" pronto para baixar. Não precisa abrir nem editar — arraste ele direto para a pasta certa do Drive do cliente, substituindo o antigo.`;
+    document.getElementById('csvInput').closest('.field-row').style.display = 'none';
+    document.getElementById('expectedRows').closest('.field-row').style.display = 'none';
+    document.getElementById('btnValidar').style.display = 'none';
+  } else {
+    step4TitleEl.textContent = 'Cole aqui o resultado';
+    step4DescEl.textContent = 'Copie a resposta completa que o Claude te devolveu (só a tabela) e cole no campo abaixo.';
+    document.getElementById('csvInput').closest('.field-row').style.display = '';
+    document.getElementById('expectedRows').closest('.field-row').style.display = '';
+    document.getElementById('btnValidar').style.display = '';
+  }
+}
+renderStep4();
 
 document.querySelectorAll('#tipoToggle .toggle-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
@@ -237,7 +295,7 @@ document.querySelectorAll('#tipoToggle .toggle-btn').forEach(btn=>{
     btn.classList.add('active');
     tipoAtual = btn.dataset.tipo;
     renderPrompt();
-    document.getElementById('validationResult').innerHTML = '';
+    renderStep4();
   });
 });
 
