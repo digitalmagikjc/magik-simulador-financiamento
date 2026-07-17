@@ -414,7 +414,7 @@
   <footer>
     Valores sujeitos à análise de crédito. Simulação baseada nas tabelas Caixa 420 meses (Abril/2026), no estoque de unidades e na aba "Prazos" da planilha do cliente.
     <br>Ferramenta desenvolvida por Beta Negócios · Assessoria Imobiliária.
-    <br><a href="./conversor.html" style="color:inherit;">Atualizar dados a partir de um PDF →</a>
+    <br><a href="./conversor.html" style="color:inherit;">Painel de atualização de dados →</a>
   </footer>
 </div>
 
@@ -628,7 +628,7 @@ function calcular(){
   if(empFiltro) pool = pool.filter(u=>u.empreendimento===empFiltro);
 
   const avaliados = pool.map(u=>{
-    const base = u.valorAvaliacao || u.valorVenal;
+    const base = u.valorVenal;
     const cotaMax = 0.8 * base;
     const financiamentoEfetivo = Math.min(financiamentoAjustado, cotaMax);
     const disponivel = entrada + fgts + subsidio + financiamentoEfetivo + reforcoTotal;

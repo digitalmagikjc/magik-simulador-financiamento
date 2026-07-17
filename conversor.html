@@ -303,7 +303,7 @@ function renderStep4(){
   document.getElementById('validationResult').innerHTML = '';
   if(FILE_BASED_TYPES.includes(tipoAtual)){
     step4TitleEl.textContent = 'Baixe o arquivo e jogue no Drive';
-    step4DescEl.textContent = `O Claude vai te devolver um arquivo chamado "${FILE_NAMES[tipoAtual]}" pronto para baixar. Não precisa abrir nem editar — arraste ele direto para a pasta certa do Drive do cliente, substituindo o antigo.`;
+    step4DescEl.innerHTML = `O Claude vai te devolver um arquivo chamado <b>"${FILE_NAMES[tipoAtual]}"</b> pronto para baixar. Não precisa abrir nem editar — arraste ele direto para a pasta <b>"Arquivos prontos"</b> do Drive do cliente, substituindo o arquivo antigo com o mesmo nome.`;
     document.getElementById('csvInput').closest('.field-row').style.display = 'none';
     document.getElementById('expectedRows').closest('.field-row').style.display = 'none';
     document.getElementById('btnValidar').style.display = 'none';
