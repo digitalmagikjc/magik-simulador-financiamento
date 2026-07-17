@@ -150,9 +150,13 @@
         <strong>Caixa — Com Redutor</strong>
         <span>Tabela de financiamento com redutor</span>
       </div>
-      <div class="toggle-btn" data-tipo="unidades">
-        <strong>Unidades / Dormitórios</strong>
-        <span>Lista de unidades com quantidade de dormitórios</span>
+      <div class="toggle-btn" data-tipo="dormitorios">
+        <strong>Dormitórios</strong>
+        <span>PDF de unidades com tipo/dormitórios</span>
+      </div>
+      <div class="toggle-btn" data-tipo="tabela_precos">
+        <strong>Tabela de Preços</strong>
+        <span>Excel de preços de unidades</span>
       </div>
     </div>
   </div>
@@ -237,31 +241,55 @@ Regras:
 - Não invente, não arredonde, não interprete — copie os valores exatamente como aparecem.
 - NÃO devolva o conteúdo como texto na conversa — entregue SOMENTE como arquivo para download.
 - Ao final, numa mensagem curta (fora do arquivo), informe quantas linhas de dados extraiu.`,
-  unidades: `Você vai receber um PDF com uma tabela de unidades disponíveis de um empreendimento imobiliário. Extraia TODAS as linhas, sem pular nenhuma, e devolva em formato CSV com exatamente estas colunas, nesta ordem:
+  dormitorios: `Você vai receber em anexo um PDF com uma tabela de unidades de empreendimentos imobiliários.
 
-EMPREENDIMENTO,BLOCO,UNIDADE,DORMITORIOS
+Extraia TODAS as linhas, sem pular nenhuma. Prefira escrever e rodar um script para ler o PDF de forma estruturada, em vez de transcrever visualmente.
 
-Regras obrigatórias:
-- Mantenha o nome do EMPREENDIMENTO exatamente como está escrito no PDF, com acentos e maiúsculas iguais ao original.
-- Se o PDF tiver outras colunas (metragem, vaga, valor etc.), ignore-as — extraia só as quatro pedidas.
-- Se alguma unidade não tiver dormitórios visível, escreva "NAO_INFORMADO" nessa célula, não deixe em branco e não invente um número.
-- Devolva SOMENTE o CSV puro, sem texto explicativo antes, depois, ou comentários no meio.
-- Ao final, em uma linha separada começando com "#", informe quantas linhas de dados você extraiu (ex: # Total: 426 linhas).`
+Gere um arquivo CSV para download chamado exatamente: dormitorios.csv
+
+Colunas exatas, nesta ordem:
+EMPREENDIMENTO,UNIDADE,TIPO_DA_UNIDADE
+
+Regras:
+- Copie o texto de cada coluna exatamente como está no PDF, sem interpretar, resumir ou converter em número.
+- Ignore qualquer linha do empreendimento "NÃO DEFINIDO" (é um registro de sistema, não uma unidade real).
+- Ignore colunas de valor/preço — extraia só as três pedidas.
+- NÃO devolva o conteúdo como texto na conversa — entregue SOMENTE como arquivo para download.
+- Ao final, numa mensagem curta (fora do arquivo), informe quantas linhas de dados extraiu.`,
+  tabela_precos: `Você vai receber em anexo uma planilha Excel com uma tabela de preços de unidades imobiliárias.
+
+Identifique as colunas pelo SIGNIFICADO, não pelo nome exato (a planilha pode vir com nomes ou ordem diferentes do que você já viu antes).
+
+Gere um arquivo CSV para download chamado exatamente: tabela_precos.csv
+
+Colunas exatas, nesta ordem:
+EMPREENDIMENTO,UNIDADE,STATUS,VALOR_VENDA,VALOR_AVALIACAO,AREA_PRIVATIVA,VAGA
+
+Regras:
+- Ignore qualquer outra coluna que não esteja nessa lista (bloco, fração ideal, módulo/fase, valor venal inicial etc.) — não precisamos delas.
+- Números em formato decimal simples: sem "R$", sem separador de milhar, ponto como separador decimal.
+- Mantenha as colunas STATUS e VAGA com o texto original, sem alterar.
+- Não filtre linhas — traga todas, disponíveis ou não.
+- NÃO devolva o conteúdo como texto na conversa — entregue SOMENTE como arquivo para download.
+- Ao final, numa mensagem curta, informe quantas linhas extraiu.`
 };
 
 const FILE_NAMES = {
   caixa_sem: 'tabela_caixa_sem_redutor.csv',
-  caixa_com: 'tabela_caixa_com_redutor.csv'
+  caixa_com: 'tabela_caixa_com_redutor.csv',
+  dormitorios: 'dormitorios.csv',
+  tabela_precos: 'tabela_precos.csv',
 };
 
 const EXPECTED_COLUMNS = {
   caixa_sem: ['FAIXA','RENDA','SUBSIDIO_COM_DEPENDENTE','FINANCIAMENTO','SUBSIDIO_SEM_DEPENDENTE','PRIMEIRA_PRESTACAO','VALOR_AVALIACAO','TAXA_NOMINAL','TAXA_EFETIVA'],
   caixa_com: ['FAIXA','RENDA','SUBSIDIO_COM_DEPENDENTE','FINANCIAMENTO','SUBSIDIO_SEM_DEPENDENTE','PRIMEIRA_PRESTACAO','VALOR_AVALIACAO','TAXA_NOMINAL','TAXA_EFETIVA'],
-  unidades: ['EMPREENDIMENTO','BLOCO','UNIDADE','DORMITORIOS']
+  dormitorios: ['EMPREENDIMENTO','UNIDADE','TIPO_DA_UNIDADE'],
+  tabela_precos: ['EMPREENDIMENTO','UNIDADE','STATUS','VALOR_VENDA','VALOR_AVALIACAO','AREA_PRIVATIVA','VAGA'],
 };
 
 let tipoAtual = 'caixa_sem';
-const FILE_BASED_TYPES = ['caixa_sem', 'caixa_com'];
+const FILE_BASED_TYPES = ['caixa_sem', 'caixa_com', 'dormitorios', 'tabela_precos'];
 const promptBox = document.getElementById('promptBox');
 function renderPrompt(){
   promptBox.textContent = PROMPTS[tipoAtual];
