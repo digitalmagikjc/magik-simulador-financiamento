@@ -595,15 +595,33 @@ document.querySelectorAll('.money-mask').forEach(inp=>{
 // mas só é preenchido com opções depois que loadAllData() traz os dados
 const empSel = document.getElementById('empreendimento');
 function populateEmpreendimentoSelect(){
+  populateFiltro('filtroTipo', [...new Set(UNITS.map(u=>u.grupoTipo))], ordenarComNaoInformadoPorUltimo);
+  populateFiltro('filtroDormitorio', [...new Set(UNITS.map(u=>u.grupoDormitorio))], ordenarDormitorios);
+  updateEmpreendimentoOptions();
+}
+
+function updateEmpreendimentoOptions(){
+  const tipoFiltro = document.getElementById('filtroTipo').value;
+  const dormFiltro = document.getElementById('filtroDormitorio').value;
+  let pool = UNITS;
+  if(tipoFiltro) pool = pool.filter(u=>u.grupoTipo===tipoFiltro);
+  if(dormFiltro) pool = pool.filter(u=>u.grupoDormitorio===dormFiltro);
+
+  const atual = empSel.value;
+  const empreendimentos = [...new Set(pool.map(u=>u.empreendimento))].sort();
   empSel.innerHTML = '<option value="">Sugerir automaticamente (todos)</option>';
-  const empreendimentos = [...new Set(UNITS.map(u=>u.empreendimento))].sort();
   empreendimentos.forEach(e=>{
     const opt = document.createElement('option');
     opt.value = e; opt.textContent = e;
     empSel.appendChild(opt);
   });
-  populateFiltro('filtroTipo', [...new Set(UNITS.map(u=>u.grupoTipo))], ordenarComNaoInformadoPorUltimo);
-  populateFiltro('filtroDormitorio', [...new Set(UNITS.map(u=>u.grupoDormitorio))], ordenarDormitorios);
+  // se o empreendimento selecionado não tem mais unidade batendo com o filtro, volta para "todos"
+  if(empreendimentos.includes(atual)){
+    empSel.value = atual;
+  } else if(atual){
+    empSel.value = '';
+    empSel.dispatchEvent(new Event('change'));
+  }
 }
 
 function ordenarComNaoInformadoPorUltimo(a, b){
@@ -629,6 +647,8 @@ function populateFiltro(selectId, valores, comparador){
   });
   if(valores.includes(atual)) sel.value = atual;
 }
+document.getElementById('filtroTipo').addEventListener('change', updateEmpreendimentoOptions);
+document.getElementById('filtroDormitorio').addEventListener('change', updateEmpreendimentoOptions);
 empSel.addEventListener('change', () => {
   const meses = PRAZO_OBRA_MESES[empSel.value];
   const mesesInput = document.getElementById('reforcoMeses');
