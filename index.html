@@ -392,6 +392,16 @@
         </div>
         <div class="hint">Comparada com a 1ª prestação estimada pela tabela da Caixa (pós-entrega).</div>
 
+        <label for="filtroTipo">Tipo</label>
+        <select id="filtroTipo">
+          <option value="">Todos</option>
+        </select>
+
+        <label for="filtroDormitorio">Dormitórios</label>
+        <select id="filtroDormitorio">
+          <option value="">Todos</option>
+        </select>
+
         <label for="empreendimento">Empreendimento de interesse</label>
         <select id="empreendimento">
           <option value="">Sugerir automaticamente (todos)</option>
@@ -450,6 +460,36 @@ function numBR(v){
   return isNaN(n) ? parseFloat(v) || 0 : (String(v).includes(',') ? n : parseFloat(v) || 0);
 }
 
+// separa "HIS-2 - 02 DORMS" em grupo de tipo ("HIS") e grupo de dormitório ("2 dorms"),
+// por regra fixa de texto — não depende de IA, funciona com qualquer TIPO_DA_UNIDADE já carregado
+function categorizarTipoUnidade(tipoUnidade){
+  if(!tipoUnidade || !tipoUnidade.trim()){
+    return { grupoTipo: 'Não informado', grupoDormitorio: 'Não informado' };
+  }
+  const texto = tipoUnidade.trim();
+  const partes = texto.split(' - ');
+  const bruto = partes[0] ? partes[0].trim() : '';
+  const sufixo = partes.length > 1 ? partes.slice(1).join(' - ').trim().toUpperCase() : '';
+
+  // remove sufixo numérico do prefixo: "HIS-2" -> "HIS", "NR1-3" -> "NR1", "R2V" fica "R2V"
+  const grupoTipo = bruto.replace(/-\d+$/, '') || 'Não informado';
+
+  let grupoDormitorio = 'Não informado';
+  // reconhece "LOJA" mesmo quando vem sozinho, sem o padrão "PREFIXO - LOJA"
+  // (dado de origem inconsistente: algumas lojas vêm só como "LOJA", sem prefixo)
+  if(texto.toUpperCase().includes('LOJA')) grupoDormitorio = 'Loja';
+  else if(sufixo.includes('STUDIO')) grupoDormitorio = 'Studio';
+  else if(sufixo.includes('FLEX')) grupoDormitorio = 'Flex';
+  else {
+    const m = sufixo.match(/(\d+)/);
+    if(m){
+      const n = parseInt(m[1], 10);
+      grupoDormitorio = n + (n === 1 ? ' dorm' : ' dorms');
+    }
+  }
+  return { grupoTipo, grupoDormitorio };
+}
+
 function montarCaixa(rows){
   return rows.filter(r => r.RENDA !== undefined && r.RENDA !== '').map(r => ({
     faixa: r.FAIXA,
@@ -487,15 +527,21 @@ async function loadAllData(){
 
     UNITS = precosRows
       .filter(r => r.EMPREENDIMENTO && r.STATUS === 'DISPONÍVEL PARA VENDA')
-      .map(r => ({
-        empreendimento: r.EMPREENDIMENTO,
-        unidade: r.UNIDADE,
-        valorVenal: numBR(r.VALOR_VENDA),
-        valorAvaliacao: numBR(r.VALOR_AVALIACAO),
-        areaPrivativa: numBR(r.AREA_PRIVATIVA),
-        vaga: r.VAGA || '',
-        tipoUnidade: tipoPorChave[r.EMPREENDIMENTO + '||' + r.UNIDADE] || '',
-      }));
+      .map(r => {
+        const tipoUnidade = tipoPorChave[r.EMPREENDIMENTO + '||' + r.UNIDADE] || '';
+        const { grupoTipo, grupoDormitorio } = categorizarTipoUnidade(tipoUnidade);
+        return {
+          empreendimento: r.EMPREENDIMENTO,
+          unidade: r.UNIDADE,
+          valorVenal: numBR(r.VALOR_VENDA),
+          valorAvaliacao: numBR(r.VALOR_AVALIACAO),
+          areaPrivativa: numBR(r.AREA_PRIVATIVA),
+          vaga: r.VAGA || '',
+          tipoUnidade,
+          grupoTipo,
+          grupoDormitorio,
+        };
+      });
 
     PRAZO_OBRA_MESES = {};
     prazosRows.forEach(r => {
@@ -556,6 +602,32 @@ function populateEmpreendimentoSelect(){
     opt.value = e; opt.textContent = e;
     empSel.appendChild(opt);
   });
+  populateFiltro('filtroTipo', [...new Set(UNITS.map(u=>u.grupoTipo))], ordenarComNaoInformadoPorUltimo);
+  populateFiltro('filtroDormitorio', [...new Set(UNITS.map(u=>u.grupoDormitorio))], ordenarDormitorios);
+}
+
+function ordenarComNaoInformadoPorUltimo(a, b){
+  if(a === 'Não informado') return 1;
+  if(b === 'Não informado') return -1;
+  return a.localeCompare(b, 'pt-BR');
+}
+
+function ordenarDormitorios(a, b){
+  const ordem = { 'Studio': 0.5, 'Flex': 0.6, 'Loja': 100, 'Não informado': 101 };
+  const rank = v => v in ordem ? ordem[v] : (parseInt(v, 10) || 99);
+  return rank(a) - rank(b);
+}
+
+function populateFiltro(selectId, valores, comparador){
+  const sel = document.getElementById(selectId);
+  const atual = sel.value;
+  sel.innerHTML = '<option value="">Todos</option>';
+  valores.sort(comparador).forEach(v=>{
+    const opt = document.createElement('option');
+    opt.value = v; opt.textContent = v;
+    sel.appendChild(opt);
+  });
+  if(valores.includes(atual)) sel.value = atual;
 }
 empSel.addEventListener('change', () => {
   const meses = PRAZO_OBRA_MESES[empSel.value];
@@ -626,6 +698,10 @@ function calcular(){
 
   let pool = UNITS;
   if(empFiltro) pool = pool.filter(u=>u.empreendimento===empFiltro);
+  const tipoFiltro = document.getElementById('filtroTipo').value;
+  const dormFiltro = document.getElementById('filtroDormitorio').value;
+  if(tipoFiltro) pool = pool.filter(u=>u.grupoTipo===tipoFiltro);
+  if(dormFiltro) pool = pool.filter(u=>u.grupoDormitorio===dormFiltro);
 
   const avaliados = pool.map(u=>{
     const base = u.valorVenal;
